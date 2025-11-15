@@ -190,4 +190,40 @@ map.on("load", async () => {
       .join("circle")
       .attr("cx", (d) => getCoords(d).cx)
       .attr("cy", (d) => getCoords(d).cy)
-      .attr("r", (d) => radiusScale(d.total
+      .attr("r", (d) => radiusScale(d.totalTraffic))
+      .style("--departure-ratio", (d) =>
+        stationFlow(d.totalTraffic ? d.departures / d.totalTraffic : 0.5)
+      )
+      .each(function (d) {
+        const titleSel = d3.select(this).select("title");
+        if (titleSel.empty()) {
+          d3.select(this)
+            .append("title")
+            .text(
+              `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
+            );
+        } else {
+          titleSel.text(
+            `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`
+          );
+        }
+      });
+  }
+
+  function updateTimeDisplay() {
+    timeFilter = Number(timeSlider.value);
+
+    if (timeFilter === -1) {
+      selectedTime.textContent = "";
+      anyTimeLabel.style.display = "block";
+    } else {
+      selectedTime.textContent = formatTime(timeFilter);
+      anyTimeLabel.style.display = "none";
+    }
+
+    updateScatterPlot(timeFilter);
+  }
+
+  timeSlider.addEventListener("input", updateTimeDisplay);
+  updateTimeDisplay(); // initialize
+});
