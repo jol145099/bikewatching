@@ -5,21 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bike Traffic in Boston</title>
 
-    <!-- Favicon (optional) -->
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-
-    <!-- Global + map styles -->
+    <!-- Styles -->
     <link rel="stylesheet" href="global.css" />
     <link rel="stylesheet" href="map.css" />
 
-    <!-- Mapbox GL JS CSS -->
+    <!-- Mapbox GL CSS -->
     <link
       href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
       rel="stylesheet"
     />
 
-    <!-- JS (ES modules) -->
-    <script src="map.js" type="module"></script>
+    <!-- Mapbox + D3 as GLOBAL scripts (must come before map.js) -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+
+    <!-- Your code -->
+    <script src="map.js" defer></script>
   </head>
 
   <body>
@@ -45,6 +46,7 @@
 
     <main>
       <div id="map">
+        <!-- SVG overlay for stations -->
         <svg></svg>
       </div>
 
