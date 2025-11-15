@@ -17,8 +17,7 @@ const map = new mapboxgl.Map({
 let stations = [];
 let trips = [];
 let timeFilter = -1;
-
-const svg = d3.select("#map").select("svg");
+let svg; // will be created after map load
 
 // map departure ratio → 0, 0.5, 1 for 3-color legend
 const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
@@ -26,51 +25,24 @@ const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 // will set domain after loading data
 let radiusScale = d3.scaleSqrt().range([0, 25]);
 
-// helper to safely get lat/lon from different field names
+// helpers to read coordinates and IDs
 function getLat(station) {
-  return (
-    station.lat ??
-    station.Lat ??
-    station.latitude ??
-    station.Latitude ??
-    null
-  );
+  return station.lat;
 }
 function getLon(station) {
-  return (
-    station.lon ??
-    station.Long ??
-    station.lng ??
-    station.longitude ??
-    station.Longitude ??
-    null
-  );
+  return station.lon;
 }
-
-// ID used to join stations with trips
 function getStationId(station, idx) {
-  return (
-    station.short_name ??
-    station.Number ?? // Boston-style dataset
-    station.station_id ??
-    station.id ??
-    `S${idx}`
-  );
+  return station.short_name ?? station.station_id ?? `S${idx}`;
 }
 
 // project station lon/lat to screen coords
 function getCoords(station) {
   const lat = getLat(station);
   const lon = getLon(station);
-
-  // if we somehow still don't have coordinates, put it off-screen
-  if (lat == null || lon == null) {
-    return { cx: -9999, cy: -9999 };
-  }
-
-  const point = new mapboxgl.LngLat(+lon, +lat);
-  const { x, y } = map.project(point);
-  return { cx: x, cy: y };
+  if (lat == null || lon == null) return { cx: -9999, cy: -9999 };
+  const p = map.project([+lon, +lat]);
+  return { cx: p.x, cy: p.y };
 }
 
 function formatTime(minutes) {
@@ -101,7 +73,7 @@ function computeStationTraffic(stationsArray, tripsArray) {
     const arr = arrivals.get(id) ?? 0;
     const dep = departures.get(id) ?? 0;
 
-    s._id = id; // cache it so we reuse the same ID
+    s._id = id;
     s.arrivals = arr;
     s.departures = dep;
     s.totalTraffic = arr + dep;
@@ -109,7 +81,7 @@ function computeStationTraffic(stationsArray, tripsArray) {
   });
 }
 
-// filter trips for a 2-hour window around selected minute
+// filter trips for 2-hour window
 function filterTripsByTime(tripsArray, minute) {
   if (minute === -1) return tripsArray;
 
@@ -125,7 +97,11 @@ function filterTripsByTime(tripsArray, minute) {
 // ---------- main ----------
 
 map.on("load", async () => {
-  // 1) bike lanes: Boston
+  // create SVG overlay ON TOP of Mapbox canvas
+  const canvasContainer = map.getCanvasContainer();
+  svg = d3.select(canvasContainer).append("svg");
+
+  // 1) Boston bike lanes
   map.addSource("boston_route", {
     type: "geojson",
     data: "https://bostonopendata-boston.opendata.arcgis.com/datasets/boston::existing-bike-network-2022.geojson",
@@ -142,7 +118,7 @@ map.on("load", async () => {
     },
   });
 
-  // 2) bike lanes: Cambridge
+  // 2) Cambridge bike lanes
   map.addSource("cambridge_route", {
     type: "geojson",
     data: "https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/main/Recreation/Bike_Facilities/RECREATION_BikeFacilities.geojson",
@@ -159,30 +135,22 @@ map.on("load", async () => {
     },
   });
 
-  // 3) load station + trip data
-  const stationsURL = "bluebikes-stations.json"; // use your local file
-  const tripsURL =
-    "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv";
+  // 3) load station + trip data (use your local JSON file)
+  const stationsURL = "bluebikes-stations.json";
+  const tripsURL = "bluebikes-traffic-2024-03.csv";
 
-  // ---- stations ----
   const rawStationData = await d3.json(stationsURL);
-
-  // support both {data: {stations: [...]}} and just [...]
   const rawStations =
     rawStationData?.data?.stations ??
     rawStationData?.stations ??
     rawStationData;
 
-  // normalize fields (lat/lon + id + name)
   stations = rawStations.map((d, idx) => ({
     ...d,
-    lat: getLat(d),
-    lon: getLon(d),
     _id: getStationId(d, idx),
-    name: d.NAME ?? d.name ?? d.station ?? d.short_name ?? getStationId(d, idx),
+    name: d.name,
   }));
 
-  // ---- trips ----
   trips = await d3.csv(tripsURL, (trip) => {
     trip.started_at = new Date(trip.started_at);
     trip.ended_at = new Date(trip.ended_at);
@@ -236,7 +204,6 @@ map.on("load", async () => {
     const filteredTrips = filterTripsByTime(trips, currentTimeFilter);
     const filteredStations = computeStationTraffic(stations, filteredTrips);
 
-    // when filtered, make range a bit bigger so small stations still visible
     currentTimeFilter === -1
       ? radiusScale.range([0, 25])
       : radiusScale.range([3, 50]);

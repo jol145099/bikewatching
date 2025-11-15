@@ -9,19 +9,23 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* Make mapbox canvas fill container */
+/* Mapbox canvas */
 #map .mapboxgl-canvas {
+  position: absolute;
+  inset: 0;
   width: 100% !important;
   height: 100% !important;
+  z-index: 0;
 }
 
-/* SVG overlay on top of the map */
+/* SVG overlay sits ABOVE the canvas */
 #map svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* let user drag/zoom map */
+  pointer-events: none; /* allow pan/zoom */
+  z-index: 1;
 }
 
 /* Colors shared between circles and legend */
@@ -30,7 +34,7 @@
   --color-arrivals: #f39c12;
 }
 
-/* Station circles use CSS variable for mix */
+/* Station circles */
 #map circle {
   fill: color-mix(
     in oklch,
@@ -40,7 +44,7 @@
   fill-opacity: 0.65;
   stroke: #ffffff;
   stroke-width: 1px;
-  pointer-events: auto; /* for tooltips */
+  pointer-events: auto; /* tooltips */
 }
 
 /* Legend styling */
