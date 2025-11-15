@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bike Traffic in Boston</title>
+
+    <!-- Favicon (optional) -->
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+    <!-- Global + map styles -->
+    <link rel="stylesheet" href="global.css" />
+    <link rel="stylesheet" href="map.css" />
+
+    <!-- Mapbox GL JS CSS -->
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+
+    <!-- JS (ES modules) -->
+    <script src="map.js" type="module"></script>
+  </head>
+
+  <body>
+    <header>
+      <h1>🚲 Bike Traffic in Boston</h1>
+
+      <label class="time-filter">
+        Filter by time:
+        <input
+          id="time-slider"
+          type="range"
+          min="-1"
+          max="1440"
+          step="5"
+          value="-1"
+        />
+        <span class="time-display">
+          <time id="selected-time"></time>
+          <em id="any-time">(any time)</em>
+        </span>
+      </label>
+    </header>
+
+    <main>
+      <div id="map">
+        <svg></svg>
+      </div>
+
+      <div class="legend">
+        <div style="--departure-ratio: 1">More departures</div>
+        <div style="--departure-ratio: 0.5">Balanced</div>
+        <div style="--departure-ratio: 0">More arrivals</div>
+      </div>
+    </main>
+  </body>
+</html>
