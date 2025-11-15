@@ -17,7 +17,7 @@ const map = new mapboxgl.Map({
 let stations = [];
 let trips = [];
 let timeFilter = -1;
-let svg; // will be created after map load
+let svg; // D3 SVG overlay
 
 // map departure ratio → 0, 0.5, 1 for 3-color legend
 const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
@@ -25,21 +25,8 @@ const stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 // will set domain after loading data
 let radiusScale = d3.scaleSqrt().range([0, 25]);
 
-// helpers to read coordinates and IDs
-function getLat(station) {
-  return station.lat;
-}
-function getLon(station) {
-  return station.lon;
-}
-function getStationId(station, idx) {
-  return station.short_name ?? station.station_id ?? `S${idx}`;
-}
-
-// project station lon/lat to screen coords
 function getCoords(station) {
-  const lat = getLat(station);
-  const lon = getLon(station);
+  const { lat, lon } = station;
   if (lat == null || lon == null) return { cx: -9999, cy: -9999 };
   const p = map.project([+lon, +lat]);
   return { cx: p.x, cy: p.y };
@@ -69,7 +56,7 @@ function computeStationTraffic(stationsArray, tripsArray) {
   );
 
   return stationsArray.map((s, idx) => {
-    const id = s._id ?? getStationId(s, idx);
+    const id = s.short_name ?? s.station_id ?? `S${idx}`;
     const arr = arrivals.get(id) ?? 0;
     const dep = departures.get(id) ?? 0;
 
@@ -97,9 +84,12 @@ function filterTripsByTime(tripsArray, minute) {
 // ---------- main ----------
 
 map.on("load", async () => {
-  // create SVG overlay ON TOP of Mapbox canvas
+  // 0) create SVG overlay in the Mapbox canvas container
   const canvasContainer = map.getCanvasContainer();
-  svg = d3.select(canvasContainer).append("svg");
+  svg = d3
+    .select(canvasContainer)
+    .append("svg")
+    .attr("class", "stations-layer");
 
   // 1) Boston bike lanes
   map.addSource("boston_route", {
@@ -135,20 +125,17 @@ map.on("load", async () => {
     },
   });
 
-  // 3) load station + trip data (use your local JSON file)
-  const stationsURL = "bluebikes-stations.json";
-  const tripsURL = "bluebikes-traffic-2024-03.csv";
+  // 3) load station + trip data from DSC106 (remote URLs)
+  const stationsURL =
+    "https://dsc106.com/labs/lab07/data/bluebikes-stations.json";
+  const tripsURL =
+    "https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv";
 
-  const rawStationData = await d3.json(stationsURL);
-  const rawStations =
-    rawStationData?.data?.stations ??
-    rawStationData?.stations ??
-    rawStationData;
-
-  stations = rawStations.map((d, idx) => ({
+  const stationData = await d3.json(stationsURL);
+  stations = stationData.data.stations.map((d) => ({
     ...d,
-    _id: getStationId(d, idx),
-    name: d.name,
+    lat: d.lat,
+    lon: d.lon,
   }));
 
   trips = await d3.csv(tripsURL, (trip) => {
@@ -158,6 +145,9 @@ map.on("load", async () => {
   });
 
   stations = computeStationTraffic(stations, trips);
+
+  console.log("stations loaded:", stations.length);
+  console.log("trips loaded:", trips.length);
 
   const maxTraffic = d3.max(stations, (d) => d.totalTraffic) || 1;
   radiusScale.domain([0, maxTraffic]).range([0, 25]);

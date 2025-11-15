@@ -1,4 +1,4 @@
-/* Map container (white “card”) */
+/* Map container as a white "card" */
 #map {
   position: relative;
   width: 100%;
@@ -9,7 +9,7 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* Mapbox canvas */
+/* Mapbox canvas fills the card */
 #map .mapboxgl-canvas {
   position: absolute;
   inset: 0;
@@ -18,13 +18,13 @@
   z-index: 0;
 }
 
-/* SVG overlay sits ABOVE the canvas */
-#map svg {
+/* Our D3 SVG overlay sits ON TOP of the canvas */
+#map svg.stations-layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* allow pan/zoom */
+  pointer-events: none; /* allow map pan/zoom */
   z-index: 1;
 }
 
@@ -44,7 +44,7 @@
   fill-opacity: 0.65;
   stroke: #ffffff;
   stroke-width: 1px;
-  pointer-events: auto; /* tooltips */
+  pointer-events: auto; /* so tooltips work */
 }
 
 /* Legend styling */
